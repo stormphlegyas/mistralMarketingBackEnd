@@ -12,13 +12,30 @@ def extract(readme: str) -> dict:
   """
   Takes a README and extracts the following properties
   
-  Parameters:
-      readme (str): The README content
-
-  Returns:
-      dict: A dictionary containing the extracted properties
-  """
+  Parameters
+  ----------
+  readme : str
+      The README content
   
+  Returns
+  -------
+  dict
+      A dictionary containing the extracted properties
+  
+  Raises
+  ------
+  RuntimeError
+      If extraction fails after maximum retries
+      
+  Examples
+  --------
+  >>> extract("Sample README content")
+  {'description': 'Sample description',
+    'value_proposition': 'Sample value proposition',
+    'target_audience': 'Sample target audience',
+    'project_type': 'Sample project type',
+    'project_sector': 'Sample project sector'}
+  """
   system_prompt = """
 ## Context
 This is a marketing application aimed to generate omnichannels campaign for open-source projects across various platforms and content types (Hackernews posts, Reddit posts, Twitter/X posts, Youtube video tutorials, Hackathons, ...)
