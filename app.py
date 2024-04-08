@@ -147,6 +147,7 @@ def start_session():
             actions[platform],
             metadata
         )
+    
 
     return jsonify(
         {
