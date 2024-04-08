@@ -11,6 +11,10 @@ from flask_cors import CORS
 from git_agent import clone_repository_from_github, read_repository_files
 from embeddings import SimilaritySearch
 
+import utils.extractor as extractor
+import utils.marketing as marketing
+import utils.search_github_repos as similar_projects
+
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
@@ -94,6 +98,30 @@ def start_session():
 
     sorted_embeddings = sorted(embeddings.items(), key=lambda x: x[1]['distance'], reverse=False)
     closest = sorted_embeddings[:3]
+
+    # check readme.md file exists case insensitive
+    readme_path = None
+    all_paths = [file.get("file_path") for file in github_files]
+
+    for file_path in all_paths:
+        if "readme.md" in file_path.lower():
+            readme_path = file_path
+            break
+
+    if readme_path is None:
+        return jsonify(
+            {
+                "message": "README.md file not found in the repository",
+                "id": session_id,
+            }
+        ), 404
+    
+    readme = open(readme_path, 'r').read()
+    metadata = extractor.extract(readme)
+    similar_repos = similar_projects.search_github_repos(
+        query=metadata.get('description', ''))
+    marketing_plan = marketing.plan(metadata=metadata)
+    
     
     return jsonify(
         {
@@ -101,6 +129,7 @@ def start_session():
             "id": session_id
         }
     ), 200
+
 
 
 @csrf.exempt

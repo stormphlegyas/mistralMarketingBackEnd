@@ -39,6 +39,8 @@ def search_github_repos(query):
     response = requests.get(url)
     data = response.json()
 
+    print(data)
+
     repos = [{'name': item['name'], 'url': item['html_url'], 'description': item['description'], 'ssh_url': item['ssh_url'] } for item in data['items']]
     return repos
 
