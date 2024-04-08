@@ -2,11 +2,14 @@
 import os
 import uuid
 
+import numpy as np
+
 from flask import Flask, request, session, jsonify
 from flask_wtf import CSRFProtect
 from flask_cors import CORS
 
-# from embeddings import SimilaritySearch
+from git_agent import clone_repository_from_github, read_repository_files
+from embeddings import SimilaritySearch
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -14,8 +17,13 @@ app.secret_key = os.urandom(24)
 CORS(app)
 csrf = CSRFProtect(app)
 
-# SimilaritySearch()
-# (self, model:str, device:str=None, index_name:str=None)
+ss_instance = SimilaritySearch(
+    model="mistral-embed",
+)
+
+embedding_global:dict= {}
+conversations:dict= {}
+briefs:dict = {}
 
 @csrf.exempt
 @app.route("/start", methods=["POST"])
@@ -32,13 +40,59 @@ def start_session():
     jsonify
         A JSON response containing a unique session ID.
     """
+    global briefs
+    global conversations
+    global embedding_global
+
     session_id = str(uuid.uuid4())
     session["id"] = session_id
-    session["conversation"] = []
+    conversations["session_id"] = []
     session["metadata"] = {
         "date": request.json["date"],
         "github": request.json["github"],
     }
+
+    briefs[session_id] = request.json["brief"]
+
+    clone_repository_from_github(
+        github_url=request.json["github"],
+        session_id=session_id
+    )
+
+    github_files:list = read_repository_files(
+        root_folder="./dist/" + session_id
+    )
+
+    embeddings:list = []
+
+    for doc in github_files:
+        embedding = ss_instance.encode(
+            data=doc["content"]
+        )
+        
+        embeddings.append(embedding)
+
+    embedding_global[session_id] = embeddings
+
+    reference_embedding = [
+        ss_instance.encode(
+            data=request.json["brief"]
+        )
+    ]
+
+    embeddings = np.array(embeddings)
+    
+    print(embeddings.shape)
+
+    print(reference_embedding.shape)
+
+    results_dataframe = ss_instance.calculate_distances(
+        sentences=github_files,
+        embeddings=embeddings,
+        reference_embedding=reference_embedding
+    )
+
+    print(results_dataframe.sort("distance"))
 
     return jsonify(
         {
@@ -72,6 +126,8 @@ def chat():
     BadRequest
         If the request does not contain a JSON body.
     """
+    global embedding_global
+
     try:
         # Retrieve the current list of dictionaries from the session.
         state = session.get("conversation", [])
@@ -82,10 +138,10 @@ def chat():
             }
         )
 
+        embedding_state = embedding_global[session_id]
+
         # Store the updated list back in the session.
         session["conversation"] = state
-
-        
 
     except Exception as e:
         # Log the error and respond with an appropriate message if any error occurs.

@@ -1,26 +1,25 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) Louis Brulé Naudet. All Rights Reserved.
-# This software may be used and distributed according to the terms of the License Agreement.
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 
 import faiss
 import logging
 import numpy as np
 import os
+import polars as pl
 
 import scipy.spatial.distance as distance
-from sentence_transformers import SentenceTransformer
+
+from dotenv import load_dotenv
+from mistralai.client import MistralClient
+from sklearn.metrics.pairwise import euclidean_distances
 
 from typing import Tuple
+
 logging.basicConfig(level=logging.INFO)
 
+load_dotenv()
+
 class SimilaritySearch:
-    def __init__(self, model:str, device:str=None, index_name:str=None):
+    def __init__(self, model:str, index_name:str=None):
         """
         Initializes an SimilaritySearch object to manage associations between embedding models and index names.
 
@@ -28,9 +27,6 @@ class SimilaritySearch:
         ----------
         model : str
             Name or identifier of the embedding model being used.
-
-        device : str, optional
-            Device to perform the encoding (e.g., 'cpu', 'cuda'). Defaults to 'cpu'.
 
         index_name : str, optional
             Name of the index associated with the embedding model.
@@ -44,27 +40,19 @@ class SimilaritySearch:
         self.model = model
         self.index_name = index_name
         self.vectorstore = None
-        
-        if device:
-            self.device = device
-        
-        else:
-            self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
-
-        self.transformer = SentenceTransformer(
-            self.model, 
-            device=self.device
+        self.api_key = os.environ.get("MISTRAL_API_KEY")
+        self.client = MistralClient(
+            api_key=self.api_key
         )
-
     
-    def encode(self, data: list) -> np.ndarray:
+    def encode(self, data: str) -> np.ndarray:
         """
         Encodes a list of sentences into their corresponding embeddings using a specified SentenceTransformer model.
 
         Parameters
         ----------
-        data : list
-            List of sentences to be encoded.
+        data : str
+            String to be encoded.
 
         Returns
         -------
@@ -83,19 +71,17 @@ class SimilaritySearch:
             If there's an issue with the SentenceTransformer model or the encoding process.
         """
         try:
-            embeddings = self.transformer.encode(
-                data,
-                show_progress_bar=False
+            embeddings_batch_response = self.client.embeddings(
+                model=self.model,
+                input=data,
             )
 
             logging.info("Embeddings have been successfully generated...")
 
-            return embeddings
+            return embeddings_batch_response.data[0].embedding
 
         except Exception as e:
             logging.error(f"Error occurred during encoding: {e}")
-
-            raise Exception("Encoding failed. Check the SentenceTransformer model or input data.")
 
 
     @staticmethod
@@ -141,6 +127,54 @@ class SimilaritySearch:
             raise ValueError(f"An error occurred during computation: {e}")
 
         return max_array_index
+
+    
+    def calculate_distances(
+        self,
+        sentences:list, 
+        embeddings:list, 
+        reference_embedding
+    ):
+        """
+        Calculate Euclidean distances between each embedding in 'embeddings' and 'reference_embedding'
+        and print the distances along with their corresponding sentences.
+
+        Parameters
+        ----------
+        sentences : list of str
+            List of sentences corresponding to the embeddings.
+
+        embeddings : list of arrays
+            List of embeddings.
+
+        reference_embedding : array
+            The reference embedding to calculate distances from.
+
+        Returns
+        -------
+        None
+            Prints each sentence along with its corresponding distance to the reference_embedding.
+
+        Notes
+        -----
+        This function calculates the Euclidean distances between each embedding in 'embeddings' and the
+        'reference_embedding'. It prints each sentence along with its corresponding distance.
+        """
+        # Initialize empty lists to store sentences and distances
+        sentences_list = []
+        distances_list = []
+        
+        for t, e in zip(sentences, embeddings):
+            distance = euclidean_distances([e], [reference_embedding])[0][0]
+            sentences_list.append(t)
+            distances_list.append(distance)
+
+        data = {
+            "sentence": sentences_list, 
+            "distance": distances_lis
+        }
+
+        df = pl.DataFrame(data)
 
 
     def index(self, embeddings:np.ndarray, save:bool=False) -> any:
