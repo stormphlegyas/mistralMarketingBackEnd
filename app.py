@@ -14,6 +14,7 @@ from embeddings import SimilaritySearch
 import utils.extractor as extractor
 import utils.marketing as marketing
 import utils.search_github_repos as similar_projects
+import platform_prompts as platform_pompts
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -118,6 +119,7 @@ def start_session():
     
     readme = open(readme_path, 'r').read()
     metadata = extractor.extract(readme)
+
     similar_repos = []
 
     try:
@@ -127,7 +129,22 @@ def start_session():
         print(f"Error searching similar projects: {e}")
         
     marketing_plan = marketing.plan(metadata=metadata)
-    
+
+    platforms = marketing_plan["platforms"]
+
+    actions = {
+		"Blog": platform_pompts.prompt_blog,
+        "Reddit": platform_pompts.prompt_reddit,
+        "Twitter": platform_pompts.prompt_tweet,
+        "Hackernews": platform_pompts.prompt_hackernews
+    }
+
+    for platform in platforms:
+        generate(
+            actions[platform],
+            metadata
+        )
+
     
     return jsonify(
         {

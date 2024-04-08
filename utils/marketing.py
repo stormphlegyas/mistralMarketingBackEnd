@@ -33,32 +33,40 @@ JSON object following format:
   "platforms": "A list of strings designating the different possible platforms among the following list ['Hackernews', 'Blog', 'Reddit', 'Twitter', 'ProductHunt']",
 }
 """.strip()
+  max_retries = 3
+  retry_count = 0
   
-  messages = [
-    ChatMessage(role="system", content=system_prompt),
-    ChatMessage(role="user", content=f"""
-# App profile
-{json.dumps(metadata, indent=2)}
-""")
-  ]
+  try:
+    messages = [
+      ChatMessage(role="system", content=system_prompt),
+      ChatMessage(role="user", content=f"""
+  # App profile
+  {json.dumps(metadata, indent=2)}
+  """)
+    ]
 
-  response = client.chat(
-        model="mistral-medium-latest", 
-        messages=messages, 
-        response_format={
-          "schema": {
-            "platforms": "string[]" # A list of strings
-          }
-        },
-    )
+    response = client.chat(
+          model="mistral-medium-latest", 
+          messages=messages, 
+          response_format={
+            "schema": {
+              "platforms": "string[]" # A list of strings
+            }
+          },
+      )
 
-  response = response.choices[0].message.content
-  response = response.replace("`", "")
-  
-  response = response.split('{')[1]
-  response = response.split('}')[0]
+    response = response.choices[0].message.content
+    response = response.replace("`", "")
+    
+    response = response.split('{')[1]
+    response = response.split('}')[0]
 
-  response = "{" + response + "}"
+    response = "{" + response + "}"
 
-  response = json.loads(response)
-  return response
+    response = json.loads(response)
+
+    return response
+
+  except Exception as e:
+    retry_count += 1
+    print(f"An error occurred: {e}. Retrying... (Attempt {retry_count}/{max_retries})")

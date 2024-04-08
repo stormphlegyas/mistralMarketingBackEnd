@@ -3,7 +3,7 @@ import json
 from mistralai.client import MistralClient
 from mistralai.models.chat_completion import ChatMessage
 from dotenv import load_dotenv
-
+  
 load_dotenv()
 
 client = MistralClient(api_key=os.getenv("MISTRAL_API_KEY"))
@@ -34,13 +34,17 @@ Extract data from the README to the following format
   "project_sector": "The sector of the project (web development, data science, ...)",
 }
 """.strip()
+  max_retries = 3
+  retry_count = 0
   
-  messages = [
-    ChatMessage(role="system", content=system_prompt),
-    ChatMessage(role="user", content=readme)
-  ]
-
-  response = client.chat(
+  while retry_count < max_retries:
+    try:
+      messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": readme}
+      ]
+  
+      response = client.chat(
         model="mistral-medium-latest", 
         messages=messages, 
         response_format={
@@ -52,15 +56,20 @@ Extract data from the README to the following format
             "project_type": "string",
             "project_sector": "string",
           }
-        },
-    )
-
-  response = response.choices[0].message.content
-
-  response = response.split('{')[1]
-  response = response.split('}')[0]
-
-  response = "{" + response + "}"
-
-  response = json.loads(response)
-  return response
+          },
+      )
+      
+      response = response.choices[0].message.content
+      response = response.split('{')[1]
+      response = response.split('}')[0]
+      
+      response = "{" + response + "}"
+      response = json.loads(response)
+      
+      return response
+      
+    except Exception as e:
+      retry_count += 1
+      print(f"An error occurred: {e}. Retrying... (Attempt {retry_count}/{max_retries})")
+  
+  return {"error": "Exceeded maximum retries, unable to extract data from the README."}
