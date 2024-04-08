@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-# import faiss
 import logging
 import numpy as np
 import os

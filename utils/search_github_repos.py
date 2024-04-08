@@ -3,6 +3,38 @@ import sys
 import json
 
 def search_github_repos(query):
+    """
+    Search GitHub repositories based on a query.
+
+    Parameters
+    ----------
+    query : str
+        The search query to be used for searching repositories on GitHub.
+
+    Returns
+    -------
+    list of dict
+        A list of dictionaries containing information about GitHub repositories
+        matching the given query. Each dictionary contains the following keys:
+        - 'name': str
+            The name of the repository.
+        - 'url': str
+            The URL of the repository on GitHub.
+        - 'description': str
+            A brief description of the repository.
+        - 'ssh_url': str
+            The SSH URL of the repository.
+
+    Raises
+    ------
+    requests.exceptions.RequestException
+        If there was an error while making the HTTP request to the GitHub API.
+
+    Examples
+    --------
+    >>> search_github_repos('python')
+    [{'name': 'requests', 'url': 'https://github.com/psf/requests', 'description': 'Python HTTP Requests for Humans™', 'ssh_url': 'git@github.com:psf/requests.git'}, ...]
+    """
     url = f"https://api.github.com/search/repositories?q={query}"
     response = requests.get(url)
     data = response.json()
