@@ -118,15 +118,23 @@ def start_session():
     
     readme = open(readme_path, 'r').read()
     metadata = extractor.extract(readme)
-    similar_repos = similar_projects.search_github_repos(
-        query=metadata.get('description', ''))
+    similar_repos = []
+
+    try:
+        similar_repos = similar_projects.search_github_repos(
+            query=metadata.get('description', ''))
+    except Exception as e:
+        print(f"Error searching similar projects: {e}")
+        
     marketing_plan = marketing.plan(metadata=metadata)
     
     
     return jsonify(
         {
             "message": "Session started", 
-            "id": session_id
+            "id": session_id,
+            "similar_repos": similar_repos,
+            
         }
     ), 200
 
