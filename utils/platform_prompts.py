@@ -111,6 +111,12 @@ def generate(prompt_function, state=None):
         messages=messages,
     )
 
+    response = response.choices[0].message.content
+    response = response.replace("`", "")
+    response = response.split('{')[1]
+    response = response.split('}')[0]
+    response = "{" + response + "}"
+
     return response
 
 

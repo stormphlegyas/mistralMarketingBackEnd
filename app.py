@@ -29,6 +29,7 @@ ss_instance = SimilaritySearch(
 embedding_global:dict= {}
 conversations:dict= {}
 briefs:dict = {}
+responses: dict = {}
 
 @csrf.exempt
 @app.route("/start", methods=["POST"])
@@ -48,6 +49,7 @@ def start_session():
     global briefs
     global conversations
     global embedding_global
+    global responses
 
     session_id = str(uuid.uuid4())
     session["id"] = session_id
@@ -59,10 +61,12 @@ def start_session():
 
     briefs[session_id] = request.json["brief"]
 
+    print('0.5')
     clone_repository_from_github(
         github_url=request.json["github"],
         session_id=session_id
     )
+    print('0.95')
 
     github_files:list = read_repository_files(
         root_folder="./dist/" + session_id
@@ -117,20 +121,29 @@ def start_session():
             }
         ), 404
     
+    print('1')
     readme = open(readme_path, 'r').read()
+    print('2')
     metadata = extractor.extract(readme)
+    print(metadata)
+    print('3')
 
     similar_repos = []
 
     try:
         similar_repos = similar_projects.search_github_repos(
             query=metadata.get('description', ''))
+        print(similar_repos)
+        print('4')
     except Exception as e:
         print(f"Error searching similar projects: {e}")
+        print('5')
         
     marketing_plan = marketing.plan(metadata=metadata)
+    print('6')
 
     platforms = marketing_plan["platforms"]
+    print('7')
     print(platforms)
 
     actions = {
@@ -142,12 +155,20 @@ def start_session():
 
     content = {}
 
+    print('8')
     for platform in platforms:
+        print('9')
         content[platform] = platform_pompts.generate(
             actions[platform],
             metadata
         )
     
+    responses[session_id] = {
+            "message": "Session started", 
+            "id": session_id,
+            "similar_repos": similar_repos,
+            "content": content
+        }
 
     return jsonify(
         {
@@ -211,30 +232,32 @@ def chat():
 
 
 @csrf.exempt
-@app.route("/result", methods=['GET'])
-def result():
+@app.route("/plan/<string:session_id>", methods=["GET"])
+def plan(session_id: str):
     """
-    Retrieve the previously stored data from the session.
+    Retrieve the marketing plan for the session.
     
     Parameters
     ----------
-    None
+    session_id : str
+        The unique session ID.
 
     Returns
     -------
     jsonify
-        A JSON response containing a message and the retrieved data.
-    
+        A JSON response containing the marketing plan for the session.
+
     Raises
     ------
-    BadRequest
-        If no data is found in the session.
+    KeyError
+        If the session ID is not found in the session.
     """
-    conversation = session.get("conversation")
-    if conversation is None:
-        raise BadRequest("No conversation found in session.")
+    global responses
 
-    return jsonify({"message": "Data retrieved from session", "conversation": conversation}), 200
+    try:
+        return jsonify(responses[session_id]), 200
+    except KeyError:
+        return jsonify({"error": "Session ID not found"}), 404
     
 
 if __name__ == "__main__":

@@ -60,6 +60,8 @@ Extract data from the README to the following format
       )
       
       response = response.choices[0].message.content
+
+      response = response.replace("`", "")
       response = response.split('{')[1]
       response = response.split('}')[0]
       
