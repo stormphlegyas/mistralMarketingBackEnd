@@ -6,7 +6,7 @@ from flask import Flask, request, session, jsonify
 from flask_wtf import CSRFProtect
 from flask_cors import CORS
 
-from embeddings import SimilaritySearch
+# from embeddings import SimilaritySearch
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
