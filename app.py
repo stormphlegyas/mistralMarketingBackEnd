@@ -82,6 +82,7 @@ def start_session():
 
         file_embedding = np.array(file_embedding)
         embeddings[file.get("file_path")] = {}
+        embeddings[file.get("file_path")]['content'] = file.get('content')
         embeddings[file.get("file_path")]['embedding'] = file_embedding
 
         # compute the cosine similarity between the reference embedding and the current embedding
@@ -90,7 +91,7 @@ def start_session():
         )
 
     embedding_global[session_id] = embeddings
-    
+
     sorted_embeddings = sorted(embeddings.items(), key=lambda x: x[1]['distance'], reverse=False)
     closest = sorted_embeddings[:3]
     
