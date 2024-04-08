@@ -14,7 +14,7 @@ from embeddings import SimilaritySearch
 import utils.extractor as extractor
 import utils.marketing as marketing
 import utils.search_github_repos as similar_projects
-import platform_prompts as platform_pompts
+import utils.platform_prompts as platform_pompts
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -139,11 +139,15 @@ def start_session():
         "Hackernews": platform_pompts.prompt_hackernews
     }
 
+
+    platforms_posts = []
+
     for platform in platforms:
-        generate(
+        platforms_posts.append(generate(
             actions[platform],
             metadata
         )
+    )
 
     
     return jsonify(
