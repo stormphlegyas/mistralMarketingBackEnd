@@ -37,7 +37,6 @@ Generate a blog post in markdown format, the blog post can be spinned in multipl
 
 ## Format
 Return as JSON format
-
     "title": "Your title here",
     "content": "Your blog post here"
 
@@ -56,9 +55,8 @@ Generate a tweet that can be used to promote the project. The tweet can take 2 d
 
 ## Format
 Return as JSON format
-
+    "title": "Your tweet title"
     "content": "Your tweet here"
-    "snippet": "Optional code snippet"
 
 """.strip()
 
@@ -74,7 +72,6 @@ the project.
 
 ## Format
 Return as JSON format
-
     "title": "Your title here",
     "content": "Your post here"
 
@@ -93,10 +90,8 @@ Craft a Reddit post that garners attention within the community. The post should
 
 ## Format
 Return as JSON format
-
-    "subreddit": "Your suggested subreddit",
     "title": "Your title here",
-    "body": "Your post here"
+    "content": "Your post here"
 """.strip()
 
 
