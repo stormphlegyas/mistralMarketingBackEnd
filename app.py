@@ -4,41 +4,21 @@ import uuid
 
 from flask import Flask, request, session, jsonify
 from flask_wtf import CSRFProtect
+from flask_cors import CORS
+
+from embeddings import SimilaritySearch
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
+CORS(app)
 csrf = CSRFProtect(app)
 
-@csrf.exempt
-@app.route("/hello", methods=["GET"])
-def hello_session():
-    """
-    Generates a unique session ID (UUID) and stores it in the session.
-    
-    Parameters
-    ----------
-    None
-
-    Returns
-    -------
-    jsonify
-        A JSON response containing a unique session ID.
-    """
-    session_id = str(uuid.uuid4())
-    session["id"] = session_id
-    session["data"] = []
-
-    return jsonify(
-        {
-            "message": "Session started", 
-            "id": session_id
-        }
-    ), 200
-
+# SimilaritySearch()
+# (self, model:str, device:str=None, index_name:str=None)
 
 @csrf.exempt
-@app.route("/start", methods=["GET"])
+@app.route("/start", methods=["POST"])
 def start_session():
     """
     Generates a unique session ID (UUID) and stores it in the session.
@@ -54,7 +34,11 @@ def start_session():
     """
     session_id = str(uuid.uuid4())
     session["id"] = session_id
-    session["data"] = []
+    session["conversation"] = []
+    session["metadata"] = {
+        "date": request.json["date"],
+        "github": request.json["github"],
+    }
 
     return jsonify(
         {
@@ -90,11 +74,18 @@ def chat():
     """
     try:
         # Retrieve the current list of dictionaries from the session.
-        state = session.get("data", [])
+        state = session.get("conversation", [])
         # Append the new dictionary to the list. 
-        state.append(request.json["message"])
+        state.append(
+            {
+                "user": request.json["message"]
+            }
+        )
+
         # Store the updated list back in the session.
-        session["data"] = state
+        session["conversation"] = state
+
+        
 
     except Exception as e:
         # Log the error and respond with an appropriate message if any error occurs.
@@ -125,11 +116,11 @@ def result():
     BadRequest
         If no data is found in the session.
     """
-    data = session.get("data")
-    if data is None:
-        raise BadRequest("No data found in session.")
+    conversation = session.get("conversation")
+    if conversation is None:
+        raise BadRequest("No conversation found in session.")
 
-    return jsonify({"message": "Data retrieved from session", "data": data}), 200
+    return jsonify({"message": "Data retrieved from session", "conversation": conversation}), 200
     
 
 if __name__ == "__main__":
