@@ -63,37 +63,37 @@ def start_session():
         root_folder="./dist/" + session_id
     )
 
-    embeddings:list = []
+    embeddings: dict = {}
+    
+    reference_embedding = ss_instance.encode(
+            data=request.json["brief"]
+    )
+    reference_embedding = np.array(reference_embedding)
+    
 
-    for doc in github_files:
-        embedding = ss_instance.encode(
-            data=doc["content"]
+    # for each file in github_files add the file_path as embeddings key and embed the content
+    for file in github_files:
+        file_embedding = ss_instance.encode(
+            data=file.get('content')
         )
         
-        embeddings.append(embedding)
+        if file_embedding is None:
+            continue
+
+        file_embedding = np.array(file_embedding)
+        embeddings[file.get("file_path")] = {}
+        embeddings[file.get("file_path")]['embedding'] = file_embedding
+
+        # compute the cosine similarity between the reference embedding and the current embedding
+        embeddings[file.get("file_path")]['distance'] = np.dot(
+            reference_embedding, file_embedding
+        )
 
     embedding_global[session_id] = embeddings
-
-    reference_embedding = [
-        ss_instance.encode(
-            data=request.json["brief"]
-        )
-    ]
-
-    embeddings = np.array(embeddings)
     
-    print(embeddings.shape)
-
-    print(reference_embedding.shape)
-
-    results_dataframe = ss_instance.calculate_distances(
-        sentences=github_files,
-        embeddings=embeddings,
-        reference_embedding=reference_embedding
-    )
-
-    print(results_dataframe.sort("distance"))
-
+    sorted_embeddings = sorted(embeddings.items(), key=lambda x: x[1]['distance'], reverse=False)
+    closest = sorted_embeddings[:3]
+    
     return jsonify(
         {
             "message": "Session started", 

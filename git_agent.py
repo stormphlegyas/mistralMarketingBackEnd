@@ -75,12 +75,11 @@ def clone_repository_from_github(
         return False
 
 
-def read_repository_files(
-    root_folder:str
-):
+
+def read_repository_files(root_folder: str):
     """
     Read each file in a repository, including subdirectories, and return a list of dictionaries
-    containing the file name and its content.
+    containing the file path, file name, and its content.
 
     Parameters
     ----------
@@ -90,12 +89,12 @@ def read_repository_files(
     Returns
     -------
     list of dict
-        A list of dictionaries containing the file name and its content.
+        A list of dictionaries containing the file path, file name, and its content.
 
     Notes
     -----
     This function traverses through all files in the repository starting from the root folder.
-    It reads the content of each file and stores it along with the file name in a dictionary.
+    It reads the content of each file and stores it along with the file path and file name in a dictionary.
     """
     files_data = []
 
@@ -104,10 +103,10 @@ def read_repository_files(
         for file in files:
             file_path = os.path.join(root, file)
             try:
-                # Read the content of each file and store it along with the file name in a dictionary
+                # Read the content of each file and store it along with the file path and file name in a dictionary
                 with open(file_path, 'r', encoding='utf-8') as f:
                     file_content = f.read()
-                    files_data.append({'file_name': file, 'content': file_content})
+                    files_data.append({'file_path': file_path, 'file_name': file, 'content': file_content})
             except Exception as e:
                 print(f"Error reading file '{file_path}': {e}")
 
