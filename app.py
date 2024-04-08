@@ -126,6 +126,7 @@ def start_session():
     readme = open(readme_path, 'r').read()
     print('2')
     metadata = extractor.extract(readme)
+    metadata['brief'] = briefs[session_id]
     print(metadata)
     print('3')
 

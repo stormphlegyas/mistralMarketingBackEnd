@@ -1,4 +1,5 @@
 import os
+import json
 
 from mistralai.client import MistralClient
 from mistralai.models.chat_completion import ChatMessage
@@ -18,6 +19,10 @@ Help the user achieve their task, you can do it, if the user is satisfied they'l
 
 def prompt_blog(state):
     return f"""
+
+# My product
+{json.dumps(state, indent=2)}
+
 ## Task 
 Generate a blog post in markdown format, the blog post can be spinned in multiple directions:
 - Tutorial / Getting Started guide
@@ -49,6 +54,9 @@ Generate a tweet that can be used to promote the project. The tweet can take 2 d
 - An informative tweet about the project, the tech, some tips, etc.
 - A funny / meme tweet related to the project or the market
 
+# My product
+{json.dumps(state, indent=2)}
+
 ## Instructions
 - The tweet should be at most 280 characters long.
 - If using some tips or tricks, you can include code snippets that will be rendered as an image attachment.
@@ -65,6 +73,9 @@ def prompt_hackernews(state):
 ## Task
 Generate a Hackernews post that can reach the frontpage. The post should be careful of how the hackernews community will perceive
 the project.
+
+# My product
+{json.dumps(state, indent=2)}
 
 ## Instructions
 - The post should be at least 100 words long.
@@ -83,6 +94,9 @@ def prompt_reddit(state):
 ## Task
 Craft a Reddit post that garners attention within the community. The post should resonate with the Reddit audience and adhere to the guidelines of the chosen subreddit.
 
+# My product
+{json.dumps(state, indent=2)}
+
 ## Instructions
 - The post should consist of a title and body text.
 - The body text should be at least 100 words long.
@@ -95,7 +109,7 @@ Return as JSON format
 """.strip()
 
 
-def generate(prompt_function, state=None):
+def generate(prompt_function, state):
     messages = [
         ChatMessage(role="system", content=system_prompt(state)),
         ChatMessage(role="user", content=prompt_function(state)),
