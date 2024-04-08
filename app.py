@@ -67,36 +67,36 @@ def start_session():
         root_folder="./dist/" + session_id
     )
 
-    embeddings: dict = {}
-    
-    reference_embedding = ss_instance.encode(
-            data=request.json["brief"]
-    )
-    reference_embedding = np.array(reference_embedding)
-    
+    embeddings = {} # Init as dict
 
-    # for each file in github_files add the file_path as embeddings key and embed the content
+    reference_embedding = ss_instance.encode(data=request.json["brief"])
+    reference_embedding = np.array(reference_embedding)
+
     for file in github_files:
-        file_embedding = ss_instance.encode(
-            data=file.get('content')
-        )
+        file_embedding = ss_instance.encode(data=file.get('content'))
         
         if file_embedding is None:
             continue
-
+        
         file_embedding = np.array(file_embedding)
-        embeddings[file.get("file_path")] = {}
-        embeddings[file.get("file_path")]['content'] = file.get('content')
-        embeddings[file.get("file_path")]['embedding'] = file_embedding
+        embeddings[file.get("file_path")] = {
+            'content': file.get('content'),
+            'embedding': file_embedding
+        }
+        
+        file_embedding_norm = np.linalg.norm(file_embedding)
+        reference_embedding_norm = np.linalg.norm(reference_embedding)
+        
+        # Calculate cosine similarity
+        embeddings[file.get("file_path")]['distance'] = np.dot(reference_embedding, file_embedding) / (reference_embedding_norm * file_embedding_norm)
 
-        # compute the cosine similarity between the reference embedding and the current embedding
-        embeddings[file.get("file_path")]['distance'] = np.dot(
-            reference_embedding, file_embedding
-        )
-
+    # Assuming you have a dictionary to store embeddings keyed by session_id
     embedding_global[session_id] = embeddings
 
-    sorted_embeddings = sorted(embeddings.items(), key=lambda x: x[1]['distance'], reverse=False)
+    # Sort based on distance, in descending order if you're using similarity as a measure
+    sorted_embeddings = sorted(embeddings.items(), key=lambda x: x[1]['distance'], reverse=True)
+
+    # Retrieve the 3 most similar items
     closest = sorted_embeddings[:3]
 
     # check readme.md file exists case insensitive
